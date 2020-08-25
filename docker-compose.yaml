@@ -1,0 +1,31 @@
+version: '3.7'
+services:
+    webserver:
+        build:
+          context: ./
+          args:
+            AIRFLOW_DEPS: statsd
+        command: webserver
+        depends_on:
+            - statsd
+        environment:
+            - LOAD_EX=y
+            - AIRFLOW__CORE__LOGGING_LEVEL=ERROR
+            - AIRFLOW__SCHEDULER__STATSD_ON=True
+            - AIRFLOW__SCHEDULER__STATSD_PORT=8125
+            - AIRFLOW__SCHEDULER__STATSD_HOST=statsd
+            - AIRFLOW__SCHEDULER__STATSD_PREFIX=airflow
+        ports:
+            - "8080:8080"
+        healthcheck:
+            test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-webserver.pid ]"]
+            interval: 30s
+            timeout: 30s
+            retries: 3
+    statsd:
+      image: statsd/statsd:v0.8.6
+      ports:
+        - "8125:8125/udp"
+        - "8126:8126"
+      volumes:
+        - ./config.js:/usr/src/app/config.js:ro
